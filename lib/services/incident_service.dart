@@ -3,10 +3,24 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../models/incident.dart';
+
 class IncidentService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
+
+  Stream<List<Incident>> incidentsStream() {
+    return _firestore
+        .collection('incidents')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => Incident.fromMap(doc.id, doc.data()))
+              .toList(),
+        );
+  }
 
   Future<void> submitIncident({
     required String title,

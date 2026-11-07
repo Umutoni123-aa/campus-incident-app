@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+import 'incident_list_screen.dart';
 import 'submit_incident_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -20,7 +21,7 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: const Center(child: Text('Home')),
+      body: const IncidentListScreen(),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.push(
           context,
