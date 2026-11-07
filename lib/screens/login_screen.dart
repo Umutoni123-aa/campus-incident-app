@@ -37,6 +37,39 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _forgotPassword() async {
+    final emailController = TextEditingController(text: _emailController.text);
+    final email = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset password'),
+        content: TextField(
+          controller: emailController,
+          keyboardType: TextInputType.emailAddress,
+          decoration: const InputDecoration(labelText: 'Email'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, emailController.text),
+            child: const Text('Send link'),
+          ),
+        ],
+      ),
+    );
+    emailController.dispose();
+    if (!mounted || email == null || email.trim().isEmpty) return;
+    final auth = context.read<AuthProvider>();
+    await auth.sendPasswordResetEmail(email);
+    if (!mounted) return;
+    final message = auth.errorMessage ?? 'Password reset email sent.';
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
   String? _validateEmail(String? value) {
     final email = value?.trim() ?? '';
     if (email.isEmpty) return 'Enter your email';
@@ -79,6 +112,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Text('Login'),
+            ),
+            TextButton(
+              onPressed: loading ? null : _forgotPassword,
+              child: const Text('Forgot password?'),
             ),
             TextButton(
               onPressed: loading

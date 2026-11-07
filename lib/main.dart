@@ -18,7 +18,13 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => IncidentProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, IncidentProvider>(
+          create: (context) => IncidentProvider(
+            authProvider: context.read<AuthProvider>(),
+          ),
+          update: (_, auth, incident) =>
+              incident ?? IncidentProvider(authProvider: auth),
+        ),
       ],
       child: const MyApp(),
     ),

@@ -11,6 +11,13 @@ class AuthService {
 
   User? get currentUser => _auth.currentUser;
 
+  Future<String?> getCurrentUserRole() async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+    final snapshot = await _firestore.collection('users').doc(user.uid).get();
+    return snapshot.data()?['role'] as String?;
+  }
+
   Future<void> register({
     required String name,
     required String email,
@@ -42,6 +49,10 @@ class AuthService {
     required String password,
   }) async {
     await _auth.signInWithEmailAndPassword(email: email, password: password);
+  }
+
+  Future<void> sendPasswordResetEmail(String email) {
+    return _auth.sendPasswordResetEmail(email: email);
   }
 
   Future<void> logout() => _auth.signOut();

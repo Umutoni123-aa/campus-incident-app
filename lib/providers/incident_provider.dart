@@ -4,13 +4,15 @@ import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../models/incident.dart';
+import 'auth_provider.dart';
 import '../services/incident_service.dart';
 
 class IncidentProvider extends ChangeNotifier {
   final IncidentService _service;
+  final AuthProvider authProvider;
   StreamSubscription<List<Incident>>? _incidentsSubscription;
 
-  IncidentProvider({IncidentService? service})
+  IncidentProvider({IncidentService? service, required this.authProvider})
     : _service = service ?? IncidentService() {
     _listenToIncidents();
   }
@@ -55,6 +57,13 @@ class IncidentProvider extends ChangeNotifier {
   String get searchText => _searchText;
   String? get selectedCategory => _selectedCategory;
   String? get selectedStatus => _selectedStatus;
+
+  Incident? incidentById(String id) {
+    for (final incident in _incidents) {
+      if (incident.id == id) return incident;
+    }
+    return null;
+  }
 
   void setSearchText(String value) {
     _searchText = value;
@@ -108,6 +117,66 @@ class IncidentProvider extends ChangeNotifier {
       return true;
     } catch (_) {
       errorMessage = 'We could not submit your incident. Please try again.';
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> updateStatus({
+    required String incidentId,
+    required String status,
+  }) async {
+    if (!authProvider.isStaff) {
+      errorMessage = 'Only staff can update incident status.';
+      notifyListeners();
+      return false;
+    }
+    if (!statuses.contains(status)) {
+      errorMessage = 'That status is not allowed.';
+      notifyListeners();
+      return false;
+    }
+    return _runMutation(() async {
+      await _service.updateStatus(incidentId, status);
+      final index = _incidents.indexWhere(
+        (incident) => incident.id == incidentId,
+      );
+      if (index != -1) {
+        _incidents[index] = _incidents[index].copyWith(status: status);
+      }
+    }, 'We could not update the incident status. Please try again.');
+  }
+
+  Future<bool> deleteIncident(Incident incident) async {
+    final user = authProvider.currentUser;
+    final canDelete =
+        authProvider.isStaff ||
+        (user?.uid == incident.reporterId && incident.status == 'Pending');
+    if (!canDelete) {
+      errorMessage = 'You cannot delete this incident.';
+      notifyListeners();
+      return false;
+    }
+    return _runMutation(() async {
+      await _service.deleteIncident(incident.id);
+      _incidents.removeWhere((item) => item.id == incident.id);
+    }, 'We could not delete the incident. Please try again.');
+  }
+
+  Future<bool> _runMutation(
+    Future<void> Function() action,
+    String failureMessage,
+  ) async {
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+    try {
+      await action();
+      return true;
+    } catch (_) {
+      errorMessage = failureMessage;
       return false;
     } finally {
       isLoading = false;

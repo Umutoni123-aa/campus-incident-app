@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
@@ -5,15 +7,22 @@ import '../services/auth_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _service;
+  StreamSubscription<User?>? _authSubscription;
 
-  AuthProvider({AuthService? service}) : _service = service ?? AuthService();
+  AuthProvider({AuthService? service}) : _service = service ?? AuthService() {
+    _authSubscription = authStateChanges.listen(_loadCurrentUserRole);
+  }
 
   bool isLoading = false;
+  bool isLoadingRole = true;
   String? errorMessage;
+  String? _role;
 
   Stream<User?> get authStateChanges => _service.authStateChanges;
   User? get currentUser => _service.currentUser;
   bool get isEmailVerified => currentUser?.emailVerified ?? false;
+  String? get role => _role;
+  bool get isStaff => _role == 'staff';
 
   Future<void> register({
     required String name,
@@ -38,6 +47,10 @@ class AuthProvider extends ChangeNotifier {
     await _run(_service.logout);
   }
 
+  Future<void> sendPasswordResetEmail(String email) async {
+    await _run(() => _service.sendPasswordResetEmail(email.trim()));
+  }
+
   Future<void> resendVerificationEmail() async {
     await _run(_service.resendVerificationEmail);
   }
@@ -48,6 +61,25 @@ class AuthProvider extends ChangeNotifier {
       verified = await _service.reloadUser();
     });
     return verified;
+  }
+
+  Future<void> _loadCurrentUserRole(User? user) async {
+    if (user == null) {
+      _role = null;
+      isLoadingRole = false;
+      notifyListeners();
+      return;
+    }
+    isLoadingRole = true;
+    notifyListeners();
+    try {
+      _role = await _service.getCurrentUserRole();
+    } catch (_) {
+      _role = null;
+    } finally {
+      isLoadingRole = false;
+      notifyListeners();
+    }
   }
 
   Future<void> _run(Future<void> Function() action) async {
@@ -78,8 +110,16 @@ class AuthProvider extends ChangeNotifier {
         return 'Please choose a stronger password.';
       case 'invalid-email':
         return 'Please enter a valid email address.';
+      case 'user-disabled':
+        return 'This account has been disabled.';
       default:
         return error.message ?? 'Something went wrong. Please try again.';
     }
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 }

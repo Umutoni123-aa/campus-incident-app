@@ -36,17 +36,20 @@ class IncidentService {
 
     String? imageUrl;
     if (image != null) {
-      final filename =
-          '${DateTime.now().millisecondsSinceEpoch}_${image.name}';
+      final filename = '${DateTime.now().millisecondsSinceEpoch}_${image.name}';
       final imageRef = _storage.ref().child('incident_images/$filename');
       await imageRef.putData(await image.readAsBytes());
       imageUrl = await imageRef.getDownloadURL();
     }
 
-    final userSnapshot =
-        await _firestore.collection('users').doc(user.uid).get();
+    final userSnapshot = await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .get();
     final reporterName =
-        userSnapshot.data()?['name'] as String? ?? user.displayName ?? 'Student';
+        userSnapshot.data()?['name'] as String? ??
+        user.displayName ??
+        'Student';
 
     await _firestore.collection('incidents').add({
       'title': title,
@@ -59,5 +62,15 @@ class IncidentService {
       'reporterName': reporterName,
       'createdAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  Future<void> updateStatus(String incidentId, String status) {
+    return _firestore.collection('incidents').doc(incidentId).update({
+      'status': status,
+    });
+  }
+
+  Future<void> deleteIncident(String incidentId) {
+    return _firestore.collection('incidents').doc(incidentId).delete();
   }
 }

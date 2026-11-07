@@ -14,6 +14,16 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Campus Incident Reporting'),
         actions: [
+          if (context.watch<AuthProvider>().isStaff)
+            const Padding(
+              padding: EdgeInsets.only(right: 8),
+              child: Center(
+                child: Chip(
+                  label: Text('Staff'),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ),
           IconButton(
             onPressed: () => context.read<AuthProvider>().logout(),
             icon: const Icon(Icons.logout),

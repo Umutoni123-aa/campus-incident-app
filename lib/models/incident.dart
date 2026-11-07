@@ -40,4 +40,19 @@ class Incident {
       createdAt: timestamp?.toDate(),
     );
   }
+
+  Incident copyWith({String? status}) {
+    return Incident(
+      id: id,
+      title: title,
+      description: description,
+      category: category,
+      location: location,
+      imageUrl: imageUrl,
+      status: status ?? this.status,
+      reporterId: reporterId,
+      reporterName: reporterName,
+      createdAt: createdAt,
+    );
+  }
 }
