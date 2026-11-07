@@ -71,10 +71,14 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   String? _validateEmail(String? value) {
-    final email = value?.trim() ?? '';
+    final email = value?.trim().toLowerCase() ?? '';
     if (email.isEmpty) return 'Enter your email';
     if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
       return 'Enter a valid email';
+    }
+    if (!email.endsWith('@alustudent.com') &&
+        !email.endsWith('@alueducation.com')) {
+      return 'Use an ALU student or education email';
     }
     return null;
   }
