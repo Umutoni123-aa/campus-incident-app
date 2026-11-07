@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -153,15 +156,14 @@ class _IncidentCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (incident.imageUrl != null)
+              if (incident.imageBase64 != null)
                 Padding(
                   padding: const EdgeInsets.only(right: 12),
-                  child: Image.network(
-                    incident.imageUrl!,
+                  child: Image.memory(
+                    _decodeImage(incident.imageBase64!),
                     width: 72,
                     height: 72,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
                   ),
                 ),
               Expanded(
@@ -202,4 +204,6 @@ class _IncidentCard extends StatelessWidget {
       ),
     );
   }
+
+  Uint8List _decodeImage(String value) => base64Decode(value);
 }

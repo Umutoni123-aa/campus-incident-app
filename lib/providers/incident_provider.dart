@@ -115,7 +115,8 @@ class IncidentProvider extends ChangeNotifier {
         image: image,
       );
       return true;
-    } catch (_) {
+    } catch (error) {
+      debugPrint('Submit incident error: $error');
       errorMessage = 'We could not submit your incident. Please try again.';
       return false;
     } finally {

@@ -1,6 +1,7 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../models/incident.dart';
@@ -8,7 +9,6 @@ import '../models/incident.dart';
 class IncidentService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   Stream<List<Incident>> incidentsStream() {
     return _firestore
@@ -34,12 +34,9 @@ class IncidentService {
       throw StateError('You must be signed in to submit an incident.');
     }
 
-    String? imageUrl;
+    String? imageBase64;
     if (image != null) {
-      final filename = '${DateTime.now().millisecondsSinceEpoch}_${image.name}';
-      final imageRef = _storage.ref().child('incident_images/$filename');
-      await imageRef.putData(await image.readAsBytes());
-      imageUrl = await imageRef.getDownloadURL();
+      imageBase64 = base64Encode(await image.readAsBytes());
     }
 
     final userSnapshot = await _firestore
@@ -56,7 +53,7 @@ class IncidentService {
       'description': description,
       'category': category,
       'location': location,
-      'imageUrl': imageUrl,
+      'imageBase64': imageBase64,
       'status': 'Pending',
       'reporterId': user.uid,
       'reporterName': reporterName,

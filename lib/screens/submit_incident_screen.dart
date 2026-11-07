@@ -42,7 +42,11 @@ class _SubmitIncidentScreenState extends State<SubmitIncidentScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final image = await _picker.pickImage(source: source);
+    final image = await _picker.pickImage(
+      source: source,
+      imageQuality: 40,
+      maxWidth: 800,
+    );
     if (image != null) {
       final bytes = await image.readAsBytes();
       if (mounted) {
@@ -159,12 +163,32 @@ class _SubmitIncidentScreenState extends State<SubmitIncidentScreen> {
                   fit: BoxFit.cover,
                 ),
               ),
-            OutlinedButton.icon(
-              onPressed: loading ? null : _chooseImageSource,
-              icon: const Icon(Icons.add_a_photo),
-              label: Text(
-                _image == null ? 'Add photo (optional)' : 'Change photo',
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: loading ? null : _chooseImageSource,
+                    icon: const Icon(Icons.add_a_photo),
+                    label: Text(
+                      _image == null ? 'Add photo (optional)' : 'Change photo',
+                    ),
+                  ),
+                ),
+                if (_image != null) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: loading
+                          ? null
+                          : () => setState(() {
+                              _image = null;
+                              _imageBytes = null;
+                            }),
+                      child: const Text('Remove photo'),
+                    ),
+                  ),
+                ],
+              ],
             ),
             const SizedBox(height: 16),
             FilledButton(

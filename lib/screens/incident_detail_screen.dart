@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -24,10 +27,10 @@ class IncidentDetailScreen extends StatelessWidget {
   String _formatDate(BuildContext context, DateTime? date) {
     if (date == null) return 'Just now';
     final localDate = date.toLocal();
-    final dateText = MaterialLocalizations.of(context).formatFullDate(localDate);
-    final timeText = MaterialLocalizations.of(context).formatTimeOfDay(
-      TimeOfDay.fromDateTime(localDate),
-    );
+    final dateText = MaterialLocalizations.of(context)
+        .formatFullDate(localDate);
+    final timeText = MaterialLocalizations.of(context)
+        .formatTimeOfDay(TimeOfDay.fromDateTime(localDate));
     return '$dateText, $timeText';
   }
 
@@ -36,7 +39,8 @@ class IncidentDetailScreen extends StatelessWidget {
     final provider = context.watch<IncidentProvider>();
     final currentIncident = provider.incidentById(incident.id) ?? incident;
     final auth = context.watch<AuthProvider>();
-    final canDelete = auth.isStaff ||
+    final canDelete =
+        auth.isStaff ||
         (auth.currentUser?.uid == currentIncident.reporterId &&
             currentIncident.status == 'Pending');
     return Scaffold(
@@ -44,23 +48,21 @@ class IncidentDetailScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (currentIncident.imageUrl != null)
+          if (currentIncident.imageBase64 != null)
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                currentIncident.imageUrl!,
+              child: Image.memory(
+                _decodeImage(currentIncident.imageBase64!),
                 width: double.infinity,
                 height: 240,
                 fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const SizedBox(
-                  height: 120,
-                  child: Center(child: Icon(Icons.broken_image)),
-                ),
               ),
             ),
           const SizedBox(height: 16),
-          Text(currentIncident.title,
-              style: Theme.of(context).textTheme.headlineSmall),
+          Text(
+            currentIncident.title,
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
           const SizedBox(height: 8),
           Chip(
             label: Text(
@@ -126,6 +128,8 @@ class IncidentDetailScreen extends StatelessWidget {
           .showSnackBar(SnackBar(content: Text(provider.errorMessage!)));
     }
   }
+
+  Uint8List _decodeImage(String value) => base64Decode(value);
 }
 
 class _StaffStatusControls extends StatefulWidget {
@@ -158,8 +162,10 @@ class _StaffStatusControlsState extends State<_StaffStatusControls> {
           initialValue: _status,
           decoration: const InputDecoration(labelText: 'Status'),
           items: IncidentProvider.statuses
-              .map((status) =>
-                  DropdownMenuItem(value: status, child: Text(status)))
+              .map(
+                (status) =>
+                    DropdownMenuItem(value: status, child: Text(status)),
+              )
               .toList(),
           onChanged: provider.isLoading
               ? null

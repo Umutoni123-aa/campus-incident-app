@@ -6,7 +6,7 @@ class Incident {
   final String description;
   final String category;
   final String location;
-  final String? imageUrl;
+  final String? imageBase64;
   final String status;
   final String reporterId;
   final String reporterName;
@@ -18,7 +18,7 @@ class Incident {
     required this.description,
     required this.category,
     required this.location,
-    required this.imageUrl,
+    required this.imageBase64,
     required this.status,
     required this.reporterId,
     required this.reporterName,
@@ -33,7 +33,7 @@ class Incident {
       description: data['description'] as String? ?? '',
       category: data['category'] as String? ?? '',
       location: data['location'] as String? ?? '',
-      imageUrl: data['imageUrl'] as String?,
+      imageBase64: data['imageBase64'] as String?,
       status: data['status'] as String? ?? 'Pending',
       reporterId: data['reporterId'] as String? ?? '',
       reporterName: data['reporterName'] as String? ?? '',
@@ -48,7 +48,7 @@ class Incident {
       description: description,
       category: category,
       location: location,
-      imageUrl: imageUrl,
+      imageBase64: imageBase64,
       status: status ?? this.status,
       reporterId: reporterId,
       reporterName: reporterName,
