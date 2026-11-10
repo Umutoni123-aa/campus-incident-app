@@ -83,3 +83,6 @@ The `incidents/{id}` document contains:
 
 Photos are stored as compressed base64 in Firestore because Firebase Storage
 needs a paid plan.
+
+## Author 
+Umutoni Nada
