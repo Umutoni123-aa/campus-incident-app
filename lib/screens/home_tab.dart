@@ -213,7 +213,14 @@ class _ReportBanner extends StatelessWidget {
                   FilledButton.icon(
                     onPressed: onTap,
                     icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Report an Issue'),
+                    label: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('Report an Issue'),
+                        SizedBox(width: 6),
+                        Icon(Icons.arrow_forward, size: 16),
+                      ],
+                    ),
                     style: FilledButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: primary,
