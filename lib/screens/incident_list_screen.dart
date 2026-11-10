@@ -11,6 +11,9 @@ import 'incident_detail_screen.dart';
 class IncidentListScreen extends StatelessWidget {
   const IncidentListScreen({super.key});
 
+  String _displayStatus(String status) =>
+      status == 'Pending' ? 'Submitted' : status;
+
   Color _statusColor(String status) {
     switch (status) {
       case 'In Progress':
@@ -25,60 +28,68 @@ class IncidentListScreen extends StatelessWidget {
   String _formatDate(BuildContext context, DateTime? date) {
     if (date == null) return 'Just now';
     final localDate = date.toLocal();
-    final dateText = MaterialLocalizations.of(context).formatShortDate(localDate);
-    final timeText = MaterialLocalizations.of(context).formatTimeOfDay(
-      TimeOfDay.fromDateTime(localDate),
-    );
+    final dateText = MaterialLocalizations.of(context)
+        .formatShortDate(localDate);
+    final timeText = MaterialLocalizations.of(context)
+        .formatTimeOfDay(TimeOfDay.fromDateTime(localDate));
     return '$dateText, $timeText';
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<IncidentProvider>();
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-          child: TextField(
-            onChanged: provider.setSearchText,
-            decoration: const InputDecoration(
-              hintText: 'Search incidents',
-              prefixIcon: Icon(Icons.search),
-              border: OutlineInputBorder(),
-            ),
+    return SafeArea(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                child: TextField(
+                  onChanged: provider.setSearchText,
+                  decoration: const InputDecoration(
+                    hintText: 'Search incidents',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              _FilterChips(
+                label: 'Category',
+                values: IncidentProvider.categories,
+                selectedValue: provider.selectedCategory,
+                onSelected: provider.setCategory,
+              ),
+              _FilterChips(
+                label: 'Status',
+                values: IncidentProvider.statuses,
+                displayValue: _displayStatus,
+                selectedValue: provider.selectedStatus,
+                onSelected: provider.setStatus,
+              ),
+              Expanded(
+                child: provider.isLoadingIncidents
+                    ? const Center(child: CircularProgressIndicator())
+                    : provider.filteredIncidents.isEmpty
+                    ? const Center(child: Text('No incidents found.'))
+                    : ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                        itemCount: provider.filteredIncidents.length,
+                        itemBuilder: (context, index) {
+                          final incident = provider.filteredIncidents[index];
+                          return _IncidentCard(
+                            incident: incident,
+                            statusColor: _statusColor(incident.status),
+                            dateText: _formatDate(context, incident.createdAt),
+                          );
+                        },
+                      ),
+              ),
+            ],
           ),
         ),
-        _FilterChips(
-          label: 'Category',
-          values: IncidentProvider.categories,
-          selectedValue: provider.selectedCategory,
-          onSelected: provider.setCategory,
-        ),
-        _FilterChips(
-          label: 'Status',
-          values: IncidentProvider.statuses,
-          selectedValue: provider.selectedStatus,
-          onSelected: provider.setStatus,
-        ),
-        Expanded(
-          child: provider.isLoadingIncidents
-              ? const Center(child: CircularProgressIndicator())
-              : provider.filteredIncidents.isEmpty
-                  ? const Center(child: Text('No incidents found.'))
-                  : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                      itemCount: provider.filteredIncidents.length,
-                      itemBuilder: (context, index) {
-                        final incident = provider.filteredIncidents[index];
-                        return _IncidentCard(
-                          incident: incident,
-                          statusColor: _statusColor(incident.status),
-                          dateText: _formatDate(context, incident.createdAt),
-                        );
-                      },
-                    ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -86,15 +97,19 @@ class IncidentListScreen extends StatelessWidget {
 class _FilterChips extends StatelessWidget {
   final String label;
   final List<String> values;
+  final String Function(String) displayValue;
   final String? selectedValue;
   final ValueChanged<String?> onSelected;
 
   const _FilterChips({
     required this.label,
     required this.values,
+    this.displayValue = _identity,
     required this.selectedValue,
     required this.onSelected,
   });
+
+  static String _identity(String value) => value;
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +132,7 @@ class _FilterChips extends StatelessWidget {
             (value) => Padding(
               padding: const EdgeInsets.only(left: 8),
               child: FilterChip(
-                label: Text(value),
+                label: Text(displayValue(value)),
                 selected: selectedValue == value,
                 onSelected: (_) => onSelected(value),
               ),
@@ -183,7 +198,9 @@ class _IncidentCard extends StatelessWidget {
                       children: [
                         Chip(
                           label: Text(
-                            incident.status,
+                            incident.status == 'Pending'
+                                ? 'Submitted'
+                                : incident.status,
                             style: const TextStyle(color: Colors.white),
                           ),
                           backgroundColor: statusColor,

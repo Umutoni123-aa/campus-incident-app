@@ -118,149 +118,186 @@ class _SubmitIncidentScreenState extends State<SubmitIncidentScreen> {
   Widget build(BuildContext context) {
     final loading = context.watch<IncidentProvider>().isLoading;
     return Scaffold(
-      appBar: AppBar(title: const Text('Report an incident')),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            TextFormField(
-              controller: _titleController,
-              decoration: _inputDecoration('Title'),
-              validator: _required,
-            ),
-            TextFormField(
-              controller: _descriptionController,
-              decoration: _inputDecoration('Description'),
-              maxLines: 4,
-              validator: _required,
-            ),
-            const SizedBox(height: 8),
-            Text('Category', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _categories.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 2.8,
-              ),
-              itemBuilder: (context, index) {
-                final category = _categories[index];
-                final selected = _category == category.name;
-                return InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: loading
-                      ? null
-                      : () => setState(() => _category = category.name),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? Theme.of(context).colorScheme.primary
-                          : Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: selected
-                            ? Theme.of(context).colorScheme.primary
-                            : Colors.grey.shade300,
+      appBar: AppBar(title: const Text('Report an Incident')),
+      body: SafeArea(
+        child: Form(
+          key: _formKey,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: ListView(
+                padding: const EdgeInsets.all(24),
+                children: [
+                  TextFormField(
+                    controller: _titleController,
+                    decoration: _inputDecoration('Title'),
+                    validator: _required,
+                  ),
+                  TextFormField(
+                    controller: _descriptionController,
+                    decoration: _inputDecoration('Description'),
+                    maxLines: 4,
+                    validator: _required,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Category',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final columns = constraints.maxWidth >= 500 ? 4 : 3;
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _categories.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: columns,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                          childAspectRatio: columns == 4 ? 1.15 : 1.25,
+                        ),
+                        itemBuilder: (context, index) {
+                          final category = _categories[index];
+                          final selected = _category == category.name;
+                          return InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: loading
+                                ? null
+                                : () =>
+                                      setState(() => _category = category.name),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: selected
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: selected
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Colors.grey.shade300,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    category.icon,
+                                    color: selected
+                                        ? Colors.white
+                                        : Colors.grey.shade700,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Flexible(
+                                    child: Text(
+                                      category.name,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: selected ? Colors.white : null,
+                                        fontWeight: selected
+                                            ? FontWeight.w600
+                                            : null,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                  if (_category == null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6, left: 12),
+                      child: Text(
+                        'Select a category',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          category.icon,
-                          color: selected ? Colors.white : Colors.grey.shade700,
-                        ),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            category.name,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: selected ? Colors.white : null,
-                              fontWeight: selected ? FontWeight.w600 : null,
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _locationController,
+                    decoration: _inputDecoration('Location').copyWith(
+                      prefixIcon: const Icon(Icons.location_on_outlined),
+                    ),
+                    validator: _required,
+                  ),
+                  const SizedBox(height: 16),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: loading ? null : _chooseImageSource,
+                    child: _image == null
+                        ? _PhotoPlaceholder()
+                        : ClipRRect(
+                            borderRadius: BorderRadius.circular(14),
+                            child: Image.memory(
+                              _imageBytes!,
+                              fit: BoxFit.cover,
                             ),
+                          ),
+                  ),
+                  if (_image == null)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 6),
+                      child: Text(
+                        'Optional',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                      ),
+                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: loading ? null : _chooseImageSource,
+                          icon: const Icon(Icons.add_a_photo),
+                          label: Text(
+                            _image == null
+                                ? 'Tap to add photos'
+                                : 'Change photo',
+                          ),
+                        ),
+                      ),
+                      if (_image != null) ...[
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: loading
+                                ? null
+                                : () => setState(() {
+                                    _image = null;
+                                    _imageBytes = null;
+                                  }),
+                            child: const Text('Remove photo'),
                           ),
                         ),
                       ],
-                    ),
+                    ],
                   ),
-                );
-              },
-            ),
-            if (_category == null)
-              Padding(
-                padding: const EdgeInsets.only(top: 6, left: 12),
-                child: Text(
-                  'Select a category',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _locationController,
-              decoration: _inputDecoration('Location'),
-              validator: _required,
-            ),
-            const SizedBox(height: 16),
-            if (_image != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.memory(
-                  _imageBytes!,
-                  height: 180,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: loading ? null : _chooseImageSource,
-                    icon: const Icon(Icons.add_a_photo),
-                    label: Text(
-                      _image == null ? 'Add photo (optional)' : 'Change photo',
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: loading ? null : _submit,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(52),
                     ),
-                  ),
-                ),
-                if (_image != null) ...[
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: loading
-                          ? null
-                          : () => setState(() {
-                              _image = null;
-                              _imageBytes = null;
-                            }),
-                      child: const Text('Remove photo'),
-                    ),
+                    child: loading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Submit Report'),
                   ),
                 ],
-              ],
-            ),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: loading ? null : _submit,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(52),
               ),
-              child: loading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Submit Report'),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -283,4 +320,61 @@ class _SubmitIncidentScreenState extends State<SubmitIncidentScreen> {
       ),
     );
   }
+}
+
+class _PhotoPlaceholder extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
+      decoration: ShapeDecoration(
+        color: Colors.white,
+        shape: _DashedBorder(color: Colors.grey.shade400, radius: 14),
+      ),
+      child: const Column(
+        children: [
+          Icon(Icons.add_a_photo_outlined, size: 30, color: Colors.grey),
+          SizedBox(height: 8),
+          Text('Tap to add photos', style: TextStyle(color: Colors.grey)),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashedBorder extends ShapeBorder {
+  final Color color;
+  final double radius;
+
+  const _DashedBorder({required this.color, required this.radius});
+
+  @override
+  EdgeInsetsGeometry get dimensions => EdgeInsets.zero;
+
+  @override
+  Path getInnerPath(Rect rect, {TextDirection? textDirection}) =>
+      Path()..addRRect(RRect.fromRectAndRadius(rect, Radius.circular(radius)));
+
+  @override
+  Path getOuterPath(Rect rect, {TextDirection? textDirection}) =>
+      Path()..addRRect(RRect.fromRectAndRadius(rect, Radius.circular(radius)));
+
+  @override
+  void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    final path = Path()
+      ..addRRect(RRect.fromRectAndRadius(rect, Radius.circular(radius)));
+    for (final metric in path.computeMetrics()) {
+      for (var distance = 0.0; distance < metric.length; distance += 10) {
+        canvas.drawPath(metric.extractPath(distance, distance + 5), paint);
+      }
+    }
+  }
+
+  @override
+  ShapeBorder scale(double t) =>
+      _DashedBorder(color: color, radius: radius * t);
 }

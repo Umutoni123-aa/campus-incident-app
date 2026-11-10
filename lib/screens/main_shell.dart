@@ -30,11 +30,14 @@ class _MainShellState extends State<MainShell> {
       const _ProfileTab(),
     ];
     return Scaffold(
-      body: IndexedStack(index: _selectedIndex, children: pages),
+      body: SafeArea(
+        top: false,
+        child: IndexedStack(index: _selectedIndex, children: pages),
+      ),
       bottomNavigationBar: BottomAppBar(
         color: Colors.white,
         child: SizedBox(
-          height: 72,
+          height: 64,
           child: Row(
             children: [
               _NavigationItem(
@@ -51,7 +54,7 @@ class _MainShellState extends State<MainShell> {
               ),
               _NavigationItem(
                 icon: Icons.add,
-                label: 'Report',
+                label: '',
                 selected: false,
                 emphasized: true,
                 onTap: _openSubmit,
@@ -107,9 +110,7 @@ class _NavigationItem extends StatelessWidget {
                     child: Icon(icon, color: Colors.white),
                   )
                 : Icon(icon, color: color),
-            if (emphasized)
-              Text(label, style: TextStyle(color: color, fontSize: 12))
-            else ...[
+            if (!emphasized) ...[
               const SizedBox(height: 4),
               Text(
                 label,

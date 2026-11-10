@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -12,13 +14,6 @@ class HomeTab extends StatelessWidget {
 
   const HomeTab({super.key, required this.onSeeAll});
 
-  void _openSubmit(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const SubmitIncidentScreen()),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -28,97 +23,155 @@ class HomeTab extends StatelessWidget {
     final visible = auth.isStaff
         ? incidents
         : incidents.where((item) => item.reporterId == userId).toList();
-    final recent = incidents.take(3).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Campus Safe'),
-        actions: [
-          if (auth.isStaff)
-            const Padding(
-              padding: EdgeInsets.only(right: 8),
-              child: Center(child: Chip(label: Text('Staff'))),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+              children: [
+                _HomeHeader(auth: auth),
+                const SizedBox(height: 22),
+                _ReportBanner(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const SubmitIncidentScreen(),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                _SectionHeader(
+                  title: 'Report Summary',
+                  action: 'See all',
+                  onTap: onSeeAll,
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    _SummaryCard(
+                      label: 'My Reports',
+                      count: visible.length,
+                      color: const Color(0xFFE9E2FF),
+                      iconColor: const Color(0xFF6C4CF1),
+                      icon: Icons.description_outlined,
+                    ),
+                    _SummaryCard(
+                      label: 'In Progress',
+                      count: visible
+                          .where((i) => i.status == 'In Progress')
+                          .length,
+                      color: const Color(0xFFDDEBFF),
+                      iconColor: Colors.blue,
+                      icon: Icons.autorenew,
+                    ),
+                    _SummaryCard(
+                      label: 'Resolved',
+                      count: visible
+                          .where((i) => i.status == 'Resolved')
+                          .length,
+                      color: const Color(0xFFDDF5E8),
+                      iconColor: Colors.green,
+                      icon: Icons.check_circle_outline,
+                    ),
+                    _SummaryCard(
+                      label: 'Submitted',
+                      count: visible.where((i) => i.status == 'Pending').length,
+                      color: const Color(0xFFFFE0E0),
+                      iconColor: Colors.red,
+                      icon: Icons.schedule,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                _SectionHeader(
+                  title: 'Recent Reports',
+                  action: 'See all',
+                  onTap: onSeeAll,
+                ),
+                const SizedBox(height: 8),
+                if (provider.isLoadingIncidents)
+                  const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else if (incidents.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Text('No reports yet.'),
+                  )
+                else
+                  ...incidents
+                      .take(3)
+                      .map((incident) => _RecentReportCard(incident: incident)),
+              ],
             ),
-          IconButton(
-            onPressed: () => auth.logout(),
-            icon: const Icon(Icons.logout),
-            tooltip: 'Logout',
           ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        children: [
-          Text(
-            'Hello, ${_firstName(auth.userName)} 👋',
-            style: Theme.of(context).textTheme.headlineSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Help make our campus safer.',
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-          const SizedBox(height: 20),
-          _ReportBanner(onTap: () => _openSubmit(context)),
-          const SizedBox(height: 24),
-          _SectionHeader(title: 'Report Summary'),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _SummaryCard(
-                label: 'My Reports',
-                count: visible.length,
-                color: const Color(0xFFE9E2FF),
-                icon: Icons.description_outlined,
-              ),
-              _SummaryCard(
-                label: 'In Progress',
-                count: visible.where((i) => i.status == 'In Progress').length,
-                color: const Color(0xFFDDEBFF),
-                icon: Icons.autorenew,
-              ),
-              _SummaryCard(
-                label: 'Resolved',
-                count: visible.where((i) => i.status == 'Resolved').length,
-                color: const Color(0xFFDDF5E8),
-                icon: Icons.check_circle_outline,
-              ),
-              _SummaryCard(
-                label: 'Pending',
-                count: visible.where((i) => i.status == 'Pending').length,
-                color: const Color(0xFFFFEBD2),
-                icon: Icons.schedule,
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          _SectionHeader(
-            title: 'Recent Reports',
-            action: 'See all',
-            onTap: onSeeAll,
-          ),
-          const SizedBox(height: 8),
-          if (provider.isLoadingIncidents)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: CircularProgressIndicator(),
-              ),
-            )
-          else if (recent.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Text('No reports yet.'),
-            )
-          else
-            ...recent.map((incident) => _RecentReportCard(incident: incident)),
-        ],
+        ),
       ),
     );
   }
+}
 
-  String _firstName(String name) => name.trim().split(RegExp(r'\s+')).first;
+class _HomeHeader extends StatelessWidget {
+  final AuthProvider auth;
+
+  const _HomeHeader({required this.auth});
+
+  @override
+  Widget build(BuildContext context) {
+    final name = auth.userName.trim().split(RegExp(r'\s+')).first;
+    final initials = auth.userName
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .take(2)
+        .map((part) => part[0].toUpperCase())
+        .join();
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Hello, $name 👋',
+                style: Theme.of(context).textTheme.headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 5),
+              const Text(
+                'Help make our campus safer. Report issues and track their resolution.',
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          onPressed: () {},
+          icon: const Icon(Icons.notifications_none),
+          tooltip: 'Notifications',
+        ),
+        PopupMenuButton<String>(
+          onSelected: (value) {
+            if (value == 'logout') auth.logout();
+          },
+          itemBuilder: (_) => const [
+            PopupMenuItem(value: 'logout', child: Text('Logout')),
+          ],
+          child: CircleAvatar(
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            child: Text(
+              initials.isEmpty ? '?' : initials,
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _ReportBanner extends StatelessWidget {
@@ -128,34 +181,53 @@ class _ReportBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: Theme.of(context).colorScheme.primary,
+    final primary = Theme.of(context).colorScheme.primary;
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: LinearGradient(colors: [primary, const Color(0xFF8A70F5)]),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.fromLTRB(20, 20, 8, 20),
+        child: Row(
           children: [
-            const Text(
-              'See an issue on campus?',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'See an issue on campus?',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Report it and help improve our learning environment.',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: onTap,
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Report an Issue'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: primary,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 6),
-            const Text(
-              'Let us know so we can make it better.',
-              style: TextStyle(color: Colors.white70),
-            ),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: onTap,
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF6C4CF1),
+            Expanded(
+              child: Icon(
+                Icons.school_outlined,
+                size: 88,
+                color: Colors.white.withValues(alpha: 0.18),
               ),
-              child: const Text('Report an Issue'),
             ),
           ],
         ),
@@ -166,22 +238,27 @@ class _ReportBanner extends StatelessWidget {
 
 class _SectionHeader extends StatelessWidget {
   final String title;
-  final String? action;
-  final VoidCallback? onTap;
+  final String action;
+  final VoidCallback onTap;
 
-  const _SectionHeader({required this.title, this.action, this.onTap});
+  const _SectionHeader({
+    required this.title,
+    required this.action,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleLarge
-              ?.copyWith(fontWeight: FontWeight.bold),
+        Expanded(
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.titleLarge
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
         ),
-        if (action != null) TextButton(onPressed: onTap, child: Text(action!)),
+        TextButton(onPressed: onTap, child: Text(action)),
       ],
     );
   }
@@ -191,12 +268,14 @@ class _SummaryCard extends StatelessWidget {
   final String label;
   final int count;
   final Color color;
+  final Color iconColor;
   final IconData icon;
 
   const _SummaryCard({
     required this.label,
     required this.count,
     required this.color,
+    required this.iconColor,
     required this.icon,
   });
 
@@ -210,8 +289,8 @@ class _SummaryCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, size: 18, color: Colors.black54),
-              const SizedBox(height: 8),
+              Icon(icon, size: 20, color: iconColor),
+              const SizedBox(height: 7),
               Text(
                 '$count',
                 style: const TextStyle(
@@ -219,7 +298,12 @@ class _SummaryCard extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Text(label, style: const TextStyle(fontSize: 11)),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 11),
+              ),
             ],
           ),
         ),
@@ -239,31 +323,130 @@ class _RecentReportCard extends StatelessWidget {
         ? Colors.green
         : incident.status == 'In Progress'
         ? Colors.blue
-        : Colors.orange;
+        : Colors.red;
     return Card(
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        title: Text(
-          incident.title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text('${incident.category} • ${incident.location}'),
-        trailing: Chip(
-          label: Text(
-            incident.status,
-            style: const TextStyle(color: Colors.white, fontSize: 11),
-          ),
-          backgroundColor: statusColor,
-          visualDensity: VisualDensity.compact,
-        ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => IncidentDetailScreen(incident: incident),
           ),
         ),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            children: [
+              _ReportThumbnail(incident: incident),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      incident.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 5),
+                    _InfoLine(
+                      icon: Icons.location_on_outlined,
+                      text: incident.location,
+                    ),
+                    _InfoLine(
+                      icon: Icons.access_time,
+                      text: _timeAgo(incident.createdAt),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Chip(
+                    label: Text(
+                      _displayStatus(incident.status),
+                      style: const TextStyle(color: Colors.white, fontSize: 10),
+                    ),
+                    backgroundColor: statusColor,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  const Icon(Icons.chevron_right, color: Colors.grey),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
+}
+
+class _ReportThumbnail extends StatelessWidget {
+  final Incident incident;
+
+  const _ReportThumbnail({required this.incident});
+
+  @override
+  Widget build(BuildContext context) {
+    if (incident.imageBase64 == null) {
+      return Container(
+        width: 58,
+        height: 58,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(Icons.image_outlined, color: Colors.grey),
+      );
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Image.memory(
+        base64Decode(incident.imageBase64!),
+        width: 58,
+        height: 58,
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+}
+
+class _InfoLine extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _InfoLine({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: Colors.grey.shade600),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+String _displayStatus(String status) =>
+    status == 'Pending' ? 'Submitted' : status;
+
+String _timeAgo(DateTime? date) {
+  if (date == null) return 'Just now';
+  final difference = DateTime.now().difference(date.toLocal());
+  if (difference.inMinutes < 1) return 'Just now';
+  if (difference.inHours < 1) return '${difference.inMinutes} min ago';
+  if (difference.inDays < 1) return '${difference.inHours} hours ago';
+  if (difference.inDays < 7) return '${difference.inDays} days ago';
+  return '${date.day}/${date.month}/${date.year}';
 }

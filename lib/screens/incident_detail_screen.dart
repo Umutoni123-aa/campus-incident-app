@@ -44,64 +44,108 @@ class IncidentDetailScreen extends StatelessWidget {
         (auth.currentUser?.uid == currentIncident.reporterId &&
             currentIncident.status == 'Pending');
     return Scaffold(
-      appBar: AppBar(title: const Text('Incident details')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          if (currentIncident.imageBase64 != null)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.memory(
-                _decodeImage(currentIncident.imageBase64!),
-                width: double.infinity,
-                height: 240,
-                fit: BoxFit.cover,
-              ),
+      appBar: AppBar(title: const Text('Incident Details')),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _IncidentThumbnail(incident: currentIncident),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                currentIncident.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              const SizedBox(height: 8),
+                              Chip(
+                                label: Text(
+                                  _displayStatus(currentIncident.status),
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                                backgroundColor: _statusColor(
+                                  currentIncident.status,
+                                ),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                              _IconDetail(
+                                icon: Icons.calendar_today_outlined,
+                                text:
+                                    'Submitted on ${_formatDate(context, currentIncident.createdAt)}',
+                              ),
+                              _IconDetail(
+                                icon: Icons.person_outline,
+                                text:
+                                    'Reported by ${currentIncident.reporterName}',
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Status Timeline',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                _StatusTimeline(status: currentIncident.status),
+                const SizedBox(height: 20),
+                if (auth.isStaff)
+                  _StaffStatusControls(incident: currentIncident),
+                const Text(
+                  'Description',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(currentIncident.description),
+                const SizedBox(height: 16),
+                _DetailRow(label: 'Category', value: currentIncident.category),
+                _DetailRow(label: 'Location', value: currentIncident.location),
+                if (currentIncident.imageBase64 != null) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Attached Photo',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: Image.memory(
+                      _decodeImage(currentIncident.imageBase64!),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ],
+                if (canDelete) ...[
+                  const SizedBox(height: 24),
+                  OutlinedButton.icon(
+                    onPressed: provider.isLoading
+                        ? null
+                        : () => _confirmDelete(context, currentIncident),
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('Delete incident'),
+                  ),
+                ],
+              ],
             ),
-          const SizedBox(height: 16),
-          Text(
-            currentIncident.title,
-            style: Theme.of(context).textTheme.headlineSmall,
           ),
-          const SizedBox(height: 8),
-          Chip(
-            label: Text(
-              currentIncident.status,
-              style: const TextStyle(color: Colors.white),
-            ),
-            backgroundColor: _statusColor(currentIncident.status),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Status Timeline',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          _StatusTimeline(status: currentIncident.status),
-          const SizedBox(height: 20),
-          if (auth.isStaff) _StaffStatusControls(incident: currentIncident),
-          _DetailRow(label: 'Category', value: currentIncident.category),
-          _DetailRow(label: 'Location', value: currentIncident.location),
-          _DetailRow(label: 'Reported by', value: currentIncident.reporterName),
-          _DetailRow(
-            label: 'Date',
-            value: _formatDate(context, currentIncident.createdAt),
-          ),
-          const SizedBox(height: 16),
-          Text('Description', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Text(currentIncident.description),
-          if (canDelete) ...[
-            const SizedBox(height: 24),
-            OutlinedButton.icon(
-              onPressed: provider.isLoading
-                  ? null
-                  : () => _confirmDelete(context, currentIncident),
-              icon: const Icon(Icons.delete_outline),
-              label: const Text('Delete incident'),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
@@ -139,6 +183,67 @@ class IncidentDetailScreen extends StatelessWidget {
   Uint8List _decodeImage(String value) => base64Decode(value);
 }
 
+String _displayStatus(String status) =>
+    status == 'Pending' ? 'Submitted' : status;
+
+class _IncidentThumbnail extends StatelessWidget {
+  final Incident incident;
+
+  const _IncidentThumbnail({required this.incident});
+
+  @override
+  Widget build(BuildContext context) {
+    if (incident.imageBase64 == null) {
+      return Container(
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(Icons.image_outlined, color: Colors.grey),
+      );
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Image.memory(
+        base64Decode(incident.imageBase64!),
+        width: 64,
+        height: 64,
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+}
+
+class _IconDetail extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _IconDetail({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 5),
+      child: Row(
+        children: [
+          Icon(icon, size: 15, color: Colors.grey.shade600),
+          const SizedBox(width: 5),
+          Expanded(
+            child: Text(
+              text,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _StaffStatusControls extends StatefulWidget {
   final Incident incident;
 
@@ -155,8 +260,9 @@ class _StatusTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const steps = ['Pending', 'In Progress', 'Resolved'];
-    final currentIndex = steps.indexOf(status).clamp(0, steps.length - 1);
+    const steps = ['Submitted', 'In Progress', 'Resolved'];
+    final storedSteps = ['Pending', 'In Progress', 'Resolved'];
+    final currentIndex = storedSteps.indexOf(status).clamp(0, steps.length - 1);
     final primary = Theme.of(context).colorScheme.primary;
     return Row(
       children: [
@@ -230,8 +336,10 @@ class _StaffStatusControlsState extends State<_StaffStatusControls> {
           decoration: const InputDecoration(labelText: 'Status'),
           items: IncidentProvider.statuses
               .map(
-                (status) =>
-                    DropdownMenuItem(value: status, child: Text(status)),
+                (status) => DropdownMenuItem(
+                  value: status,
+                  child: Text(_displayStatus(status)),
+                ),
               )
               .toList(),
           onChanged: provider.isLoading
