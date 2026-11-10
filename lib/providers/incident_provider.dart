@@ -57,6 +57,7 @@ class IncidentProvider extends ChangeNotifier {
   String get searchText => _searchText;
   String? get selectedCategory => _selectedCategory;
   String? get selectedStatus => _selectedStatus;
+  List<Incident> get incidents => List.unmodifiable(_incidents);
 
   Incident? incidentById(String id) {
     for (final incident in _incidents) {

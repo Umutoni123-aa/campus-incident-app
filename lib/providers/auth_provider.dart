@@ -17,29 +17,32 @@ class AuthProvider extends ChangeNotifier {
   bool isLoadingRole = true;
   String? errorMessage;
   String? _role;
+  String? _name;
 
   Stream<User?> get authStateChanges => _service.authStateChanges;
   User? get currentUser => _service.currentUser;
   bool get isEmailVerified => currentUser?.emailVerified ?? false;
   String? get role => _role;
   bool get isStaff => _role == 'staff';
+  String get userName {
+    if (_name != null && _name!.trim().isNotEmpty) return _name!;
+    if (currentUser?.displayName?.trim().isNotEmpty ?? false) {
+      return currentUser!.displayName!;
+    }
+    return currentUser?.email?.split('@').first ?? 'there';
+  }
 
   Future<void> register({
     required String name,
     required String email,
     required String password,
   }) async {
-    await _run(() => _service.register(
-          name: name,
-          email: email,
-          password: password,
-        ));
+    await _run(
+      () => _service.register(name: name, email: email, password: password),
+    );
   }
 
-  Future<void> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> login({required String email, required String password}) async {
     await _run(() => _service.login(email: email, password: password));
   }
 
@@ -66,6 +69,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _loadCurrentUserRole(User? user) async {
     if (user == null) {
       _role = null;
+      _name = null;
       isLoadingRole = false;
       notifyListeners();
       return;
@@ -73,7 +77,9 @@ class AuthProvider extends ChangeNotifier {
     isLoadingRole = true;
     notifyListeners();
     try {
-      _role = await _service.getCurrentUserRole();
+      final profile = await _service.getUserProfile(user.uid);
+      _role = profile?.role;
+      _name = profile?.name;
     } catch (_) {
       _role = null;
     } finally {
