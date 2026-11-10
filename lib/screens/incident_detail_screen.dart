@@ -72,6 +72,13 @@ class IncidentDetailScreen extends StatelessWidget {
             backgroundColor: _statusColor(currentIncident.status),
           ),
           const SizedBox(height: 16),
+          const Text(
+            'Status Timeline',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          _StatusTimeline(status: currentIncident.status),
+          const SizedBox(height: 20),
           if (auth.isStaff) _StaffStatusControls(incident: currentIncident),
           _DetailRow(label: 'Category', value: currentIncident.category),
           _DetailRow(label: 'Location', value: currentIncident.location),
@@ -139,6 +146,66 @@ class _StaffStatusControls extends StatefulWidget {
 
   @override
   State<_StaffStatusControls> createState() => _StaffStatusControlsState();
+}
+
+class _StatusTimeline extends StatelessWidget {
+  final String status;
+
+  const _StatusTimeline({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    const steps = ['Pending', 'In Progress', 'Resolved'];
+    final currentIndex = steps.indexOf(status).clamp(0, steps.length - 1);
+    final primary = Theme.of(context).colorScheme.primary;
+    return Row(
+      children: [
+        for (var index = 0; index < steps.length; index++) ...[
+          Expanded(
+            child: Column(
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: index <= currentIndex
+                        ? primary
+                        : Colors.grey.shade300,
+                    shape: BoxShape.circle,
+                    border: index == currentIndex
+                        ? Border.all(color: primary, width: 3)
+                        : null,
+                  ),
+                  child: Icon(
+                    index < currentIndex ? Icons.check : Icons.circle,
+                    size: index < currentIndex ? 18 : 10,
+                    color: index <= currentIndex ? Colors.white : Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  steps[index],
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: index == currentIndex ? FontWeight.bold : null,
+                    color: index <= currentIndex ? primary : Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (index < steps.length - 1)
+            Expanded(
+              child: Container(
+                height: 2,
+                color: index < currentIndex ? primary : Colors.grey.shade300,
+              ),
+            ),
+        ],
+      ],
+    );
+  }
 }
 
 class _StaffStatusControlsState extends State<_StaffStatusControls> {

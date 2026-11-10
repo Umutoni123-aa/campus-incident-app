@@ -15,13 +15,13 @@ class SubmitIncidentScreen extends StatefulWidget {
 
 class _SubmitIncidentScreenState extends State<SubmitIncidentScreen> {
   static const _categories = [
-    'Water',
-    'Electricity',
-    'Broken Facility',
-    'Furniture',
-    'Sanitation',
-    'Safety',
-    'Other',
+    (name: 'Water', icon: Icons.water_drop),
+    (name: 'Electricity', icon: Icons.bolt),
+    (name: 'Broken Facility', icon: Icons.build),
+    (name: 'Furniture', icon: Icons.chair),
+    (name: 'Sanitation', icon: Icons.delete),
+    (name: 'Safety', icon: Icons.shield),
+    (name: 'Other', icon: Icons.more_horiz),
   ];
 
   final _formKey = GlobalKey<FormState>();
@@ -87,7 +87,10 @@ class _SubmitIncidentScreenState extends State<SubmitIncidentScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate() || _category == null) {
+      setState(() {});
+      return;
+    }
     final provider = context.read<IncidentProvider>();
     final success = await provider.submitIncident(
       title: _titleController.text.trim(),
@@ -123,34 +126,87 @@ class _SubmitIncidentScreenState extends State<SubmitIncidentScreen> {
           children: [
             TextFormField(
               controller: _titleController,
-              decoration: const InputDecoration(labelText: 'Title'),
+              decoration: _inputDecoration('Title'),
               validator: _required,
             ),
             TextFormField(
               controller: _descriptionController,
-              decoration: const InputDecoration(labelText: 'Description'),
+              decoration: _inputDecoration('Description'),
               maxLines: 4,
               validator: _required,
             ),
-            DropdownButtonFormField<String>(
-              initialValue: _category,
-              decoration: const InputDecoration(labelText: 'Category'),
-              items: _categories
-                  .map(
-                    (category) => DropdownMenuItem(
-                      value: category,
-                      child: Text(category),
+            const SizedBox(height: 8),
+            Text('Category', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _categories.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 2.8,
+              ),
+              itemBuilder: (context, index) {
+                final category = _categories[index];
+                final selected = _category == category.name;
+                return InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: loading
+                      ? null
+                      : () => setState(() => _category = category.name),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: selected
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.grey.shade300,
+                      ),
                     ),
-                  )
-                  .toList(),
-              onChanged: loading
-                  ? null
-                  : (value) => setState(() => _category = value),
-              validator: (value) => value == null ? 'Select a category' : null,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          category.icon,
+                          color: selected ? Colors.white : Colors.grey.shade700,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            category.name,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: selected ? Colors.white : null,
+                              fontWeight: selected ? FontWeight.w600 : null,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
+            if (_category == null)
+              Padding(
+                padding: const EdgeInsets.only(top: 6, left: 12),
+                child: Text(
+                  'Select a category',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            const SizedBox(height: 12),
             TextFormField(
               controller: _locationController,
-              decoration: const InputDecoration(labelText: 'Location'),
+              decoration: _inputDecoration('Location'),
               validator: _required,
             ),
             const SizedBox(height: 16),
@@ -193,15 +249,36 @@ class _SubmitIncidentScreenState extends State<SubmitIncidentScreen> {
             const SizedBox(height: 16),
             FilledButton(
               onPressed: loading ? null : _submit,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(52),
+              ),
               child: loading
                   ? const SizedBox(
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Submit incident'),
+                  : const Text('Submit Report'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: Theme.of(context).colorScheme.primary,
+          width: 2,
         ),
       ),
     );
