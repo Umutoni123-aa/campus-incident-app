@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+import '../utils/validators.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -76,8 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
       return 'Enter a valid email';
     }
-    if (!email.endsWith('@alustudent.com') &&
-        !email.endsWith('@alueducation.com')) {
+    if (!isAluEmail(email)) {
       return 'Use an ALU student or education email';
     }
     return null;

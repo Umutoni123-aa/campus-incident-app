@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
+import '../utils/validators.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -30,8 +31,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
       return 'Enter a valid email';
     }
-    if (!email.endsWith('@alustudent.com') &&
-        !email.endsWith('@alueducation.com')) {
+    if (!isAluEmail(email)) {
       return 'Use an ALU student or education email';
     }
     return null;
@@ -40,10 +40,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
     await context.read<AuthProvider>().register(
-          name: _nameController.text.trim(),
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-        );
+      name: _nameController.text.trim(),
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
     if (!mounted) return;
     final auth = context.read<AuthProvider>();
     if (auth.errorMessage != null) {
@@ -65,8 +65,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             TextFormField(
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Name'),
-              validator: (value) =>
-                  value == null || value.trim().isEmpty ? 'Enter your name' : null,
+              validator: (value) => value == null || value.trim().isEmpty
+                  ? 'Enter your name'
+                  : null,
             ),
             TextFormField(
               controller: _emailController,

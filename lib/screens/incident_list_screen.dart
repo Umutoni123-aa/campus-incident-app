@@ -1,29 +1,13 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../models/incident.dart';
 import '../providers/incident_provider.dart';
+import '../utils/helpers.dart';
+import '../widgets/incident_card.dart';
 import 'incident_detail_screen.dart';
 
 class IncidentListScreen extends StatelessWidget {
   const IncidentListScreen({super.key});
-
-  String _displayStatus(String status) =>
-      status == 'Pending' ? 'Submitted' : status;
-
-  Color _statusColor(String status) {
-    switch (status) {
-      case 'In Progress':
-        return Colors.blue;
-      case 'Resolved':
-        return Colors.green;
-      default:
-        return Colors.orange;
-    }
-  }
 
   String _formatDate(BuildContext context, DateTime? date) {
     if (date == null) return 'Just now';
@@ -64,7 +48,7 @@ class IncidentListScreen extends StatelessWidget {
               _FilterChips(
                 label: 'Status',
                 values: IncidentProvider.statuses,
-                displayValue: _displayStatus,
+                displayValue: displayStatus,
                 selectedValue: provider.selectedStatus,
                 onSelected: provider.setStatus,
               ),
@@ -78,10 +62,17 @@ class IncidentListScreen extends StatelessWidget {
                         itemCount: provider.filteredIncidents.length,
                         itemBuilder: (context, index) {
                           final incident = provider.filteredIncidents[index];
-                          return _IncidentCard(
+                          return IncidentCard(
                             incident: incident,
-                            statusColor: _statusColor(incident.status),
                             dateText: _formatDate(context, incident.createdAt),
+                            showCategory: true,
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    IncidentDetailScreen(incident: incident),
+                              ),
+                            ),
                           );
                         },
                       ),
@@ -142,85 +133,4 @@ class _FilterChips extends StatelessWidget {
       ),
     );
   }
-}
-
-class _IncidentCard extends StatelessWidget {
-  final Incident incident;
-  final Color statusColor;
-  final String dateText;
-
-  const _IncidentCard({
-    required this.incident,
-    required this.statusColor,
-    required this.dateText,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => IncidentDetailScreen(incident: incident),
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (incident.imageBase64 != null)
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Image.memory(
-                    _decodeImage(incident.imageBase64!),
-                    width: 72,
-                    height: 72,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      incident.title,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 4),
-                    Text('${incident.category} • ${incident.location}'),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      children: [
-                        Chip(
-                          label: Text(
-                            incident.status == 'Pending'
-                                ? 'Submitted'
-                                : incident.status,
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                          backgroundColor: statusColor,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                        Text(
-                          dateText,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Uint8List _decodeImage(String value) => base64Decode(value);
 }

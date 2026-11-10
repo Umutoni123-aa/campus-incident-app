@@ -1,11 +1,10 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../models/incident.dart';
 import '../providers/auth_provider.dart';
 import '../providers/incident_provider.dart';
+import '../utils/helpers.dart';
+import '../widgets/incident_card.dart';
 import 'incident_detail_screen.dart';
 import 'submit_incident_screen.dart';
 
@@ -105,7 +104,19 @@ class HomeTab extends StatelessWidget {
                 else
                   ...incidents
                       .take(3)
-                      .map((incident) => _RecentReportCard(incident: incident)),
+                      .map(
+                        (incident) => IncidentCard(
+                          incident: incident,
+                          showChevron: true,
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  IncidentDetailScreen(incident: incident),
+                            ),
+                          ),
+                        ),
+                      ),
               ],
             ),
           ),
@@ -122,14 +133,8 @@ class _HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = auth.userName.trim().split(RegExp(r'\s+')).first;
-    final initials = auth.userName
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((part) => part.isNotEmpty)
-        .take(2)
-        .map((part) => part[0].toUpperCase())
-        .join();
+    final name = firstName(auth.userName);
+    final userInitials = initials(auth.userName);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -164,7 +169,7 @@ class _HomeHeader extends StatelessWidget {
           child: CircleAvatar(
             backgroundColor: Theme.of(context).colorScheme.primary,
             child: Text(
-              initials.isEmpty ? '?' : initials,
+              userInitials.isEmpty ? '?' : userInitials,
               style: const TextStyle(color: Colors.white),
             ),
           ),
@@ -317,143 +322,4 @@ class _SummaryCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _RecentReportCard extends StatelessWidget {
-  final Incident incident;
-
-  const _RecentReportCard({required this.incident});
-
-  @override
-  Widget build(BuildContext context) {
-    final statusColor = incident.status == 'Resolved'
-        ? Colors.green
-        : incident.status == 'In Progress'
-        ? Colors.blue
-        : Colors.red;
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => IncidentDetailScreen(incident: incident),
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Row(
-            children: [
-              _ReportThumbnail(incident: incident),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      incident.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 5),
-                    _InfoLine(
-                      icon: Icons.location_on_outlined,
-                      text: incident.location,
-                    ),
-                    _InfoLine(
-                      icon: Icons.access_time,
-                      text: _timeAgo(incident.createdAt),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Chip(
-                    label: Text(
-                      _displayStatus(incident.status),
-                      style: const TextStyle(color: Colors.white, fontSize: 10),
-                    ),
-                    backgroundColor: statusColor,
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  const Icon(Icons.chevron_right, color: Colors.grey),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ReportThumbnail extends StatelessWidget {
-  final Incident incident;
-
-  const _ReportThumbnail({required this.incident});
-
-  @override
-  Widget build(BuildContext context) {
-    if (incident.imageBase64 == null) {
-      return Container(
-        width: 58,
-        height: 58,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Icon(Icons.image_outlined, color: Colors.grey),
-      );
-    }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Image.memory(
-        base64Decode(incident.imageBase64!),
-        width: 58,
-        height: 58,
-        fit: BoxFit.cover,
-      ),
-    );
-  }
-}
-
-class _InfoLine extends StatelessWidget {
-  final IconData icon;
-  final String text;
-
-  const _InfoLine({required this.icon, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 14, color: Colors.grey.shade600),
-        const SizedBox(width: 4),
-        Expanded(
-          child: Text(
-            text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-String _displayStatus(String status) =>
-    status == 'Pending' ? 'Submitted' : status;
-
-String _timeAgo(DateTime? date) {
-  if (date == null) return 'Just now';
-  final difference = DateTime.now().difference(date.toLocal());
-  if (difference.inMinutes < 1) return 'Just now';
-  if (difference.inHours < 1) return '${difference.inMinutes} min ago';
-  if (difference.inDays < 1) return '${difference.inHours} hours ago';
-  if (difference.inDays < 7) return '${difference.inDays} days ago';
-  return '${date.day}/${date.month}/${date.year}';
 }

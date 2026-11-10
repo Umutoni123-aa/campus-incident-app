@@ -7,22 +7,13 @@ import 'package:provider/provider.dart';
 import '../models/incident.dart';
 import '../providers/auth_provider.dart';
 import '../providers/incident_provider.dart';
+import '../utils/helpers.dart';
+import '../widgets/status_chip.dart';
 
 class IncidentDetailScreen extends StatelessWidget {
   final Incident incident;
 
   const IncidentDetailScreen({super.key, required this.incident});
-
-  Color _statusColor(String status) {
-    switch (status) {
-      case 'In Progress':
-        return Colors.blue;
-      case 'Resolved':
-        return Colors.green;
-      default:
-        return Colors.orange;
-    }
-  }
 
   String _formatDate(BuildContext context, DateTime? date) {
     if (date == null) return 'Just now';
@@ -71,16 +62,7 @@ class IncidentDetailScreen extends StatelessWidget {
                                 style: Theme.of(context).textTheme.titleLarge,
                               ),
                               const SizedBox(height: 8),
-                              Chip(
-                                label: Text(
-                                  _displayStatus(currentIncident.status),
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                                backgroundColor: _statusColor(
-                                  currentIncident.status,
-                                ),
-                                visualDensity: VisualDensity.compact,
-                              ),
+                              StatusChip(status: currentIncident.status),
                               _IconDetail(
                                 icon: Icons.calendar_today_outlined,
                                 text:
@@ -182,9 +164,6 @@ class IncidentDetailScreen extends StatelessWidget {
 
   Uint8List _decodeImage(String value) => base64Decode(value);
 }
-
-String _displayStatus(String status) =>
-    status == 'Pending' ? 'Submitted' : status;
 
 class _IncidentThumbnail extends StatelessWidget {
   final Incident incident;
@@ -338,7 +317,7 @@ class _StaffStatusControlsState extends State<_StaffStatusControls> {
               .map(
                 (status) => DropdownMenuItem(
                   value: status,
-                  child: Text(_displayStatus(status)),
+                  child: Text(displayStatus(status)),
                 ),
               )
               .toList(),
