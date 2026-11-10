@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'home_tab.dart';
 import 'incident_list_screen.dart';
+import 'profile_tab.dart';
 import 'submit_incident_screen.dart';
 
 class MainShell extends StatefulWidget {
@@ -27,7 +28,7 @@ class _MainShellState extends State<MainShell> {
       HomeTab(onSeeAll: () => setState(() => _selectedIndex = 1)),
       const IncidentListScreen(),
       const SizedBox.shrink(),
-      const _ProfileTab(),
+      const ProfileTab(),
     ];
     return Scaffold(
       body: SafeArea(
@@ -125,14 +126,5 @@ class _NavigationItem extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _ProfileTab extends StatelessWidget {
-  const _ProfileTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const SafeArea(child: Center(child: Text('Profile coming soon')));
   }
 }
